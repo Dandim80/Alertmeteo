@@ -141,7 +141,8 @@
         async function checkWeather() {
             const locations = [
                 { name: 'Vicenza', latitude: 45.5469, longitude: 11.5473 },
-                { name: 'Caorle', latitude: 45.5954, longitude: 12.8897 }
+                { name: 'Caorle', latitude: 45.5954, longitude: 12.8897 },
+                { name: 'Barbarano Mossano', latitude: 45.5274, longitude: 11.5736 }
             ];
             const phoneNumber = '393346395727';
             const resultDiv = document.getElementById('result');
@@ -149,29 +150,28 @@
 
             for (const location of locations) {
                 const weatherData = await getWeather(location.latitude, location.longitude);
-                const alert = checkForThunderstorms(weatherData);
+                const alert = checkForRain(weatherData);
 
                 if (alert) {
-                    const message = `Attenzione: sono previsti temporali entro 12 ore a ${location.name} alle ore ${alert.time}!`;
+                    const message = `Attenzione: è prevista pioggia entro 12 ore a ${location.name} alle ore ${alert.time}!`;
                     const whatsappLink = generateWhatsAppLink(phoneNumber, message);
                     resultDiv.innerHTML += `<p>${message} <a href="${whatsappLink}" target="_blank">Invia su WhatsApp</a></p>`;
                 } else {
-                    resultDiv.innerHTML += `<p>Nessun temporale previsto entro 12 ore a ${location.name}.</p>`;
+                    resultDiv.innerHTML += `<p>Nessuna pioggia prevista entro 12 ore a ${location.name}.</p>`;
                 }
             }
         }
 
         async function getWeather(latitude, longitude) {
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m`;
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&hourly=precipitation`;
             const response = await fetch(url);
             return response.json();
         }
 
-        function checkForThunderstorms(weatherData) {
+        function checkForRain(weatherData) {
             for (let i = 0; i < 12; i++) {
-                const windSpeed = weatherData.hourly.wind_speed_10m[i];
-                const humidity = weatherData.hourly.relative_humidity_2m[i];
-                if (windSpeed > 10 && humidity > 80) {
+                const precipitation = weatherData.hourly.precipitation[i];
+                if (precipitation > 0) {
                     const time = weatherData.hourly.time[i];
                     return { time: new Date(time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
                 }
