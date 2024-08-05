@@ -1,0 +1,60 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Alert</title>
+</head>
+<body>
+    <h1>Weather Alert</h1>
+    <button onclick="checkWeather()">Check Weather</button>
+    <div id="result"></div>
+
+    <script>
+        async function checkWeather() {
+            const locations = [
+                { name: 'Vicenza', latitude: 45.5469, longitude: 11.5473 },
+                { name: 'Caorle', latitude: 45.5954, longitude: 12.8897 }
+            ];
+            const phoneNumber = '393346395727';
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '';
+
+            for (const location of locations) {
+                const weatherData = await getWeather(location.latitude, location.longitude);
+                const alert = checkForThunderstorms(weatherData);
+
+                if (alert) {
+                    const message = `Attenzione: sono previsti temporali entro 12 ore a ${location.name} alle ore ${alert.time}!`;
+                    const whatsappLink = generateWhatsAppLink(phoneNumber, message);
+                    resultDiv.innerHTML += `<p>${message} <a href="${whatsappLink}" target="_blank">Invia su WhatsApp</a></p>`;
+                } else {
+                    resultDiv.innerHTML += `<p>Nessun temporale previsto entro 12 ore a ${location.name}.</p>`;
+                }
+            }
+        }
+
+        async function getWeather(latitude, longitude) {
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m`;
+            const response = await fetch(url);
+            return response.json();
+        }
+
+        function checkForThunderstorms(weatherData) {
+            for (let i = 0; i < 12; i++) {
+                const windSpeed = weatherData.hourly.wind_speed_10m[i];
+                const humidity = weatherData.hourly.relative_humidity_2m[i];
+                if (windSpeed > 10 && humidity > 80) {
+                    const time = weatherData.hourly.time[i];
+                    return { time: new Date(time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+                }
+            }
+            return false;
+        }
+
+        function generateWhatsAppLink(phoneNumber, message) {
+            return `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+        }
+    </script>
+</body>
+</html>
